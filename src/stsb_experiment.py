@@ -6,7 +6,7 @@ from urllib.request import urlopen
 import fasttext
 import numpy as np
 import pandas as pd
-from scipy.stats import spearmanr
+from scipy.stats import pearsonr, spearmanr
 
 
 # Load the STSB dataset.
@@ -145,7 +145,8 @@ print(best_examples[
 
 # Compute the final correlation.
 
-correlation, p_value = spearmanr(
+
+pearson, _ = pearsonr(
     results_df["human_score"],
     results_df["model_score"]
 )
