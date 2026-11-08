@@ -1,168 +1,153 @@
-# Turkish Word Embeddings: Semantic Similarity and Relationship Analysis
+# Evaluating Turkish Semantic Representations
 
-## Overview
+### A Multi-Level Empirical Evaluation of FastText, MiniLM, and BERTurk
 
-This project investigates how effectively Turkish word embeddings capture semantic similarity and semantic relationships between words.
+This project investigates how different embedding architectures represent Turkish semantics across four linguistic tasks: **word-level semantic similarity, word-sense ambiguity, morphological number classification, and sentence-level semantic similarity.**
 
-The study evaluates whether distributional semantic representations can distinguish between semantically related and unrelated words and whether they encode linguistic relationships such as gender, synonymy, antonymy, and hierarchical relations.
+The study compares three pretrained representation models under a frozen-embedding evaluation framework:
+
+- **FastText** – static word embeddings with character n-gram information.
+- **MiniLM** – multilingual sentence-transformer embeddings.
+- **BERTurk** – pretrained Turkish contextual Transformer representations.
+
+The central finding is that no single model performs best across all tasks. Representation quality depends on the linguistic level and the objective of the evaluation.
+
+---
 
 ## Research Questions
 
-1. Do Turkish word embeddings assign higher similarity scores to semantically related words than to unrelated words?
+| ID | Research Question | Dataset / Task |
+|---|---|---|
+| RQ1 | How well do the models capture Turkish lexical semantic similarity? | AnlamVer |
+| RQ2 | How effectively do the representations support word-sense ambiguity classification? | Turkish verb-sense dataset |
+| RQ3 | To what extent is grammatical number recoverable from the representations? | UD Turkish BOUN |
+| RQ4 | How well do the representations correlate with human sentence-similarity judgments? | STSb-TR |
 
-2. Can word embeddings capture semantic relationships such as:
-   - Synonymy
-   - Antonymy
-   - Hypernym–Hyponym relations
-   - Gender relations
+## Models
 
-3. How well do vector representations reflect semantic structure in Turkish?
+| Model | Representation Type | Model / Configuration |
+|---|---|---|
+| FastText | Static, subword-based | `cc.tr.300.bin` |
+| MiniLM | Multilingual sentence embeddings | `paraphrase-multilingual-MiniLM-L12-v2` |
+| BERTurk | Contextual Turkish embeddings | `dbmdz/bert-base-turkish-cased` |
 
-## Dataset
+All representations were evaluated without end-to-end fine-tuning.
 
-The evaluation dataset consists of manually curated Turkish word pairs grouped into categories:
+## Datasets and Evaluation
 
-- Similar words
-- Related words
-- Unrelated words
-- Synonyms
-- Antonyms
-- Hypernym–Hyponym pairs
-- Gender pairs
+| Task | Dataset | Evaluation Metrics |
+|---|---|---|
+| Word Similarity | AnlamVer (500 word pairs) | Pearson correlation, Spearman correlation |
+| Ambiguity Classification | 246 instances, 4 Turkish verbs | Accuracy, Macro-F1, Weighted-F1 |
+| Morphological Classification | UD Turkish BOUN | Accuracy, Macro-F1, Weighted-F1 |
+| Sentence Similarity | STSb-TR (1,379 test pairs) | Pearson, Spearman, MAE, RMSE |
 
-Example:
+For the classification tasks, logistic regression was trained on frozen representations. The experiments therefore measure how accessible the relevant linguistic information is to a downstream classifier.
 
-| Word 1 | Word 2 | Relation |
-|---------|---------|----------|
-| kadın | erkek | Gender |
-| köpek | hayvan | Hypernym |
-| mutlu | neşeli | Synonym |
-| sıcak | soğuk | Antonym |
-| elma | demokrasi | Unrelated |
+---
 
-## Methodology
+## Results
 
-### Semantic Similarity
+### RQ1 – Word-Level Semantic Similarity
 
-Cosine similarity is computed between word vectors.
+AnlamVer results:
 
-Higher similarity scores are expected for semantically related words.
+| Model | Pearson (Clean) | Spearman (Clean) |
+|---|---:|---:|
+| FastText | **0.5986** | **0.5605** |
+| MiniLM | 0.3628 | 0.3077 |
+| BERTurk | 0.2447 | 0.3622 |
 
-### Semantic Relationship Analysis
+FastText achieved the strongest correlations on the clean subset, suggesting that subword information is particularly useful for isolated lexical similarity in Turkish.
 
-The project evaluates whether embeddings capture:
+### RQ2 – Word-Sense Ambiguity Classification
 
-- Synonym relations
-- Antonym relations
-- Hierarchical relations
-- Gender relations
+| Model | Accuracy | Macro-F1 | Weighted-F1 |
+|---|---:|---:|---:|
+| FastText | 0.2857 | 0.2373 | 0.2586 |
+| MiniLM | 0.3571 | 0.3671 | 0.3447 |
+| BERTurk | **0.4821** | **0.4939** | **0.4975** |
 
-### Visualization
+BERTurk achieved the strongest performance, consistent with the usefulness of contextual representations for distinguishing ambiguous word senses.
 
-Word embeddings are projected into two dimensions using:
+### RQ3 – Morphological Number Classification
 
-- PCA
-- t-SNE
+| Model | Accuracy | Macro-F1 | Weighted-F1 |
+|---|---:|---:|---:|
+| FastText | 0.9625 | 0.9310 | 0.9636 |
+| MiniLM | 0.9439 | 0.8990 | 0.9461 |
+| BERTurk | **0.9779** | **0.9581** | **0.9783** |
 
-Visualizations help identify semantic clusters and relationships.
+All three models encoded information useful for grammatical-number classification. BERTurk achieved the highest overall scores.
+
+### RQ4 – Sentence-Level Semantic Similarity
+
+STSb-TR test results:
+
+| Model | Spearman ρ | Pearson r | Scaled MAE | Scaled RMSE |
+|---|---:|---:|---:|---:|
+| FastText | 0.3791 | 0.3323 | 1.5091 | 1.8987 |
+| MiniLM | **0.7726** | **0.7655** | **1.0558** | **1.3300** |
+| BERTurk | 0.5494 | 0.5352 | 1.2972 | 1.6114 |
+
+MiniLM clearly outperformed the other models on sentence-level semantic similarity.
+
+---
+
+## Key Findings
+
+The experiments reveal a task-dependent performance pattern:
+
+- **FastText** performed best on isolated word-level semantic similarity.
+- **BERTurk** achieved the strongest results on ambiguity and morphological classification.
+- **MiniLM** performed best on sentence-level semantic similarity.
+
+These findings highlight the importance of evaluating embeddings at multiple linguistic levels instead of assuming that one architecture is universally optimal.
+
+## Limitations and Future Work
+
+Several limitations should be considered:
+
+- The ambiguity dataset is relatively small (246 instances).
+- The models use different representation extraction procedures.
+- The experiments use frozen embeddings rather than end-to-end fine-tuning.
+- The morphological probe uses isolated token forms.
+- Confidence intervals and statistical significance tests were not conducted.
+
+Future work could include:
+
+- Expanding the Turkish ambiguity dataset.
+- Fine-tuning models for Turkish semantic similarity.
+- Training a Turkish sentence-transformer based on BERTurk.
+- Conducting layer-wise morphological probing.
+- Evaluating results with repeated splits and statistical uncertainty estimates.
 
 ## Technologies
 
 - Python
+- PyTorch
+- Hugging Face Transformers
+- Sentence-Transformers
 - FastText
-- NumPy
-- Pandas
 - Scikit-learn
+- Pandas
+- NumPy
 - Matplotlib
-- Jupyter Notebook
 
-## Project Structure
+## Project Context
 
-```text
-turkish_embedding_project/
-│
-├── data/
-│   ├── similarity_pairs.csv
-│   ├── relation_pairs.csv
-│   └── embeddings/
-│
-├── notebooks/
-│   └── analysis.ipynb
-│
-├── src/
-│   ├── similarity_analysis.py
-│   ├── relation_analysis.py
-│   └── visualization.py
-│
-├── results/
-│   ├── similarity_scores.csv
-│   └── figures/
-│
-├── README.md
-├── LICENSE
-└── requirements.txt
-```
+This project was conducted as a term paper for:
 
-## Installation
+**Introduction to Computational Semantics & Discourse Processing**  
+M.A. Digital Humanities  
+Georg-August-Universität Göttingen  
+Summer Semester 2026
 
-Clone the repository:
+## Author
 
-```bash
-git clone https://github.com/yourusername/turkish_embedding_project.git
-cd turkish_embedding_project
-```
+**Irem Yurdakul**  
+M.A. Digital Humanities | Computational Linguistics & NLP
 
-Install dependencies:
+---
 
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-Run similarity analysis:
-
-```bash
-python src/similarity_analysis.py
-```
-
-Run STSB experiment:
-
-```bash
-python src/stsb_experiment.py
-```
-
-Generate STSB visualizations:
-
-```bash
-python src/visualize_stsb.py
-```
-
-Run semantic relation analysis:
-
-```bash
-python src/relation_analysis.py
-```
-
-Generate visualizations:
-
-```bash
-python src/visualization.py
-```
-
-## Expected Findings
-
-- Related words should have higher cosine similarity than unrelated words.
-- Word embeddings should capture meaningful semantic structure.
-- Semantic relations may emerge through vector space organization.
-- Visualization should reveal clustering of semantically related concepts.
-
-## Course Information
-
-**Course:** Computational Semantics and Discourse Processing
-
-**Project Topic:** Semantic Similarity and Meaning Relationships in Turkish Word Embeddings
-
-## Authors
-
-Irem Yurdakul
+*This repository accompanies an empirical study of Turkish semantic representations. The reported results reflect the experimental configurations and datasets described in the accompanying term paper.*
